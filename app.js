@@ -1,9 +1,10 @@
 //jshint esversion:6
 
-const express= require("express");
+const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const _ = require("lodash");
+// require("dotenv").config();
 
 const app = express();
 
@@ -41,16 +42,20 @@ const item3 = new Item({
 
 const defaultItems = [item1, item2, item3];
 
+// *** Create a list Schema: ***
 const listSchema = {
   name: String,
   items: [itemsSchema],
 };
 
+// *** Create a list Model: ***
 const List = mongoose.model("List", listSchema);
 
 app.get("/", function (req, res) {
+  // *** Mongoose find() ***
   Item.find({}, function (err, foundItems) {
     if (foundItems.length === 0) {
+      // *** Mongoose insertMany() ***
       Item.insertMany(defaultItems, function (err) {
         if (err) {
           console.log(err);
@@ -65,13 +70,15 @@ app.get("/", function (req, res) {
   });
 });
 
+// *** Create a custom parameters Route: ***
 app.get("/:customListName", function (req, res) {
   const customListName = _.capitalize(req.params.customListName);
 
   List.findOne({ name: customListName }, function (err, foundList) {
     if (!err) {
       if (!foundList) {
-        //create a new list
+        // *** Create a new list: ***
+        // *** Create a new Mongoose Document: ***
         const list = new List({
           name: customListName,
           items: defaultItems,
@@ -79,7 +86,7 @@ app.get("/:customListName", function (req, res) {
         list.save();
         res.redirect("/" + customListName);
       } else {
-        //show an existing list
+        // *** Show an existing list: ***
         res.render("list", {
           listTitle: foundList.name,
           newListItems: foundList.items,
@@ -90,6 +97,7 @@ app.get("/:customListName", function (req, res) {
 });
 
 app.post("/", function (req, res) {
+  // *** Adding a New Item: ***
   const itemName = req.body.newItem;
   const listName = req.body.list;
   const item = new Item({
@@ -97,7 +105,9 @@ app.post("/", function (req, res) {
   });
 
   if (listName === "Today") {
+    // *** Save item to mongoose: ***
     item.save();
+    // *** render item to home page: ***
     res.redirect("/");
   } else {
     List.findOne({ name: listName }, function (err, foundList) {
@@ -114,6 +124,7 @@ app.post("/delete", function (req, res) {
   if (listName === "Today") {
     Item.findByIdAndRemove(checkItemId, function (err) {
       if (!err) {
+        // mongoose.connection.close();
         console.log("Successfully deleted checked item.");
         res.redirect("/");
       }
@@ -144,7 +155,7 @@ if (port == null || port == "") {
   port = 3000;
 }
 // app.listen(port);
- 
-app.listen(port, function() {
+
+app.listen(port, function () {
   console.log("Server started successfully!");
 });
